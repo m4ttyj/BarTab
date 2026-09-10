@@ -7,6 +7,30 @@ browse the full catalogue of formulae and casks to install something new.
 
 ![BarTab's Installed view, with glib selected and its dependencies shown both ways](docs/screenshot.png)
 
+## Install
+
+```bash
+brew install --cask m4ttyj/tap/bartab
+```
+
+The tap is added for you — there's no separate `brew tap` step. BarTab is signed
+with a Developer ID certificate and notarized by Apple, so it installs without
+Gatekeeper warnings.
+
+Updating and removing work as they do for any cask:
+
+```bash
+brew upgrade --cask bartab
+brew uninstall --cask bartab
+```
+
+Add `--zap` to the uninstall to also delete BarTab's preferences and its cached
+copy of the package catalogue.
+
+You can also [download the latest release](https://github.com/m4ttyj/BarTab/releases/latest)
+and drag BarTab to your Applications folder, though you'll still need Homebrew
+itself installed for the app to have anything to manage.
+
 ## What it does
 
 **Installed** — every formula and cask on your Mac with its version, description
@@ -61,9 +85,10 @@ output, exit status, timing, and a cancel button.
 - macOS 14 or later
 - Homebrew installed at `/opt/homebrew` or `/usr/local` (or anywhere on your
   login shell's `PATH`)
-- Xcode command line tools, to build
 
 ## Build
+
+Building from source additionally needs the Xcode command line tools.
 
 ```bash
 ./scripts/build-app.sh            # release build into ./build
