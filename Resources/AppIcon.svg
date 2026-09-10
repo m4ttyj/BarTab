@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="0.15" y2="1">
+        <stop offset="0" stop-color="#EE8446"/><stop offset="1" stop-color="#A63A14"/>
+      </linearGradient>
+      <linearGradient id="board" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FCF5E6"/><stop offset="1" stop-color="#EDDCBD"/>
+      </linearGradient>
+      <filter id="lift" x="-25%" y="-25%" width="150%" height="150%">
+        <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#5C1F06" flood-opacity="0.32"/>
+      </filter>
+    </defs>
+<rect x="100" y="100" width="824" height="824" rx="188" ry="188" fill="url(#bg)"/>
+<rect x="100" y="100" width="824" height="824" rx="188" ry="188" fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="6"/>
+<circle cx="512" cy="512" r="272" fill="url(#board)" filter="url(#lift)"/>
+<circle cx="512" cy="512" r="236" fill="none" stroke="#D9BE8C" stroke-width="12"/>
+<g stroke="#8A5424" stroke-width="34" stroke-linecap="round">
+<line x1="410" y1="430" x2="416" y2="594"/>
+<line x1="482" y1="430" x2="476" y2="594"/>
+<line x1="542" y1="430" x2="548" y2="594"/>
+<line x1="614" y1="430" x2="608" y2="594"/>
+<line x1="371" y1="606" x2="653" y2="418"/>
+</g></svg>
