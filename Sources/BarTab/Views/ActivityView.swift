@@ -122,6 +122,11 @@ struct OperationLogView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
+            if operation.needsAppManagement {
+                AppManagementBanner(afterFailure: true)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+            }
             if operation.needsTerminal { terminalBanner }
             Divider()
             logBody

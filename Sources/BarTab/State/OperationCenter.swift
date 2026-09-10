@@ -31,6 +31,8 @@ final class BrewOperation: Identifiable {
     var finishedAt: Date?
     /// brew asked for a password; we can't answer that from a GUI.
     var needsTerminal = false
+    /// brew hit the App Management permission wall.
+    var needsAppManagement = false
 
     fileprivate let handle = CommandHandle()
     private static let maxLogLines = 4000
@@ -56,6 +58,9 @@ final class BrewOperation: Identifiable {
         if line.contains("Password:") || line.contains("a password is required")
             || line.contains("sudo: no askpass program") || line.lowercased().contains("sudo access") {
             needsTerminal = true
+        }
+        if AppManagementPermission.looksLikeFailure(line) {
+            needsAppManagement = true
         }
     }
 

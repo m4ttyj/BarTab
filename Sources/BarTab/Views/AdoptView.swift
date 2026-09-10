@@ -24,6 +24,11 @@ struct AdoptListView: View {
 
             Divider()
 
+            if model.appManagementStatus == .denied {
+                AppManagementNotice()
+                Divider()
+            }
+
             if model.isScanningApps && model.installedApps.isEmpty {
                 Placeholder(title: "Looking through your apps…", systemImage: "hourglass")
             } else if model.catalogRows.isEmpty {
@@ -66,6 +71,15 @@ struct AdoptListView: View {
             }
         }
         .safeAreaInset(edge: .bottom) { footer }
+        // Keyed on the scan result, not a bare `.task`: the app scan usually
+        // finishes *after* this view first appears, so a one-shot task would run
+        // while there was nothing to probe and never run again.
+        .task(id: model.installedApps.count) {
+            // The probe is also what makes macOS show its permission prompt, so
+            // running it here asks at the moment it makes sense.
+            guard !model.installedApps.isEmpty else { return }
+            await model.checkAppManagement()
+        }
     }
 
     private var footer: some View {
@@ -197,6 +211,13 @@ struct AdoptDetailView: View {
         if let candidate {
             AdoptDetailBody(candidate: candidate)
                 .id(candidate.id)
+        } else if model.appManagementStatus == .denied {
+            ScrollView {
+                AppManagementBanner()
+                    .padding(20)
+                    .frame(maxWidth: 720, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         } else {
             Placeholder(
                 title: "Adopt an app you already have",
@@ -221,6 +242,9 @@ private struct AdoptDetailBody: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 actions
+                if model.appManagementStatus == .denied {
+                    AppManagementBanner()
+                }
                 readinessBanner
                 detailsCard
                 commandCard

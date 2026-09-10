@@ -129,6 +129,8 @@ final class AppModel {
     private(set) var installedApps: [InstalledApp] = []
     private(set) var isScanningApps = false
     private(set) var lastAppScan: Date?
+    private(set) var appManagementStatus: AppManagementStatus = .unknown
+    private(set) var isCheckingAppManagement = false
 
     // Maintenance
     private(set) var doctorReport: DoctorReport?
@@ -239,6 +241,23 @@ final class AppModel {
         installedApps = await AppScanner().scan()
         lastAppScan = Date()
     }
+
+    /// Checks whether macOS will let us modify other apps' bundles. Cheap, and
+    /// the probe itself is what makes macOS show its permission prompt, so it's
+    /// safe to call whenever the answer might have changed.
+    func checkAppManagement() async {
+        isCheckingAppManagement = true
+        defer { isCheckingAppManagement = false }
+        // Prefer the apps we'd actually act on, then anything else we found.
+        let preferred = adoptionCandidates.map { URL(fileURLWithPath: $0.app.path) }
+        let rest = installedApps.map { URL(fileURLWithPath: $0.path) }
+        appManagementStatus = await AppManagementPermission.probe(candidates: preferred + rest)
+    }
+
+    func openAppManagementSettings() {
+        AppManagementPermission.openSettings()
+    }
+
 
     /// Called when the app regains focus — you may have run brew in a terminal.
     func refreshLocalIfStale(maxAge: TimeInterval = 30) async {
@@ -382,21 +401,30 @@ final class AppModel {
     }
 
     func adopt(_ candidate: AdoptionCandidate) {
-        operations.enqueue(
-            title: "Adopt \(candidate.app.displayName)",
-            arguments: ["install", "--cask", "--adopt", candidate.cask.token]
-        )
-        section = .activity
-    }
-
-    func adoptAllReady() {
-        for candidate in adoptionCandidates where candidate.canAdopt {
+        Task {
+            // Re-check first so the warning is current, but don't block: without
+            // the permission Homebrew may still get there by deleting and
+            // reinstalling, and that's the user's call to make.
+            await checkAppManagement()
             operations.enqueue(
                 title: "Adopt \(candidate.app.displayName)",
                 arguments: ["install", "--cask", "--adopt", candidate.cask.token]
             )
+            section = .activity
         }
-        section = .activity
+    }
+
+    func adoptAllReady() {
+        Task {
+            await checkAppManagement()
+            for candidate in adoptionCandidates where candidate.canAdopt {
+                operations.enqueue(
+                    title: "Adopt \(candidate.app.displayName)",
+                    arguments: ["install", "--cask", "--adopt", candidate.cask.token]
+                )
+            }
+            section = .activity
+        }
     }
 
     /// The destructive alternative when versions differ: throw away the installed
