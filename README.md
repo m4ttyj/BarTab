@@ -84,11 +84,16 @@ BarTab, not to your terminal.
 
 BarTab checks for it the way Homebrew does, by attempting a real write inside an
 app bundle (there's no API to query it, and the attempt is also what makes macOS
-prompt). When it's missing you get a notice in the list, a full explanation in
-the detail pane, and a button straight to Privacy & Security → App Management.
-Adoption isn't blocked — without the permission Homebrew may still succeed by
-deleting and reinstalling the app instead of taking over your copy, and the
-banner says so, since that trade-off is yours to make.
+prompt). The check runs once local state loads, and only when you actually have
+a cask installed — there's no point asking a formulae-only user for it.
+
+When it's missing you get a notice in the Unmanaged Apps and Updates lists, a
+full explanation on any installed cask's detail pane, and a button straight to
+Privacy & Security → App Management. Updates only warns when an outdated *cask*
+is waiting; formulae live in the Cellar and are unaffected. Nothing is blocked —
+without the permission Homebrew may still succeed by deleting and reinstalling
+the app instead of taking over your copy, and the banner says so, since that
+trade-off is yours to make.
 
 **Maintenance** — `brew doctor`, `brew cleanup` (with a dry run first, so you can
 see how much space you'd reclaim), `brew autoremove`, and `brew update`.

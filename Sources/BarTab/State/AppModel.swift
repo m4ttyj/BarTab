@@ -231,6 +231,15 @@ final class AppModel {
         let usage = await service.diskUsage()
         if !usage.isEmpty { sizes = usage }
         await scanApps()
+
+        // Casks live in /Applications, so the App Management permission matters
+        // for upgrading and removing them as well as for adoption. Determining it
+        // here means every section has a correct answer without each view having
+        // to race the data it depends on. Re-runs when the app is reactivated,
+        // which is exactly when someone comes back from System Settings.
+        if installed.contains(where: { $0.kind == .cask }) {
+            await checkAppManagement()
+        }
     }
 
     // MARK: - Apps outside Homebrew
@@ -248,10 +257,16 @@ final class AppModel {
     func checkAppManagement() async {
         isCheckingAppManagement = true
         defer { isCheckingAppManagement = false }
-        // Prefer the apps we'd actually act on, then anything else we found.
+        // Prefer the apps we'd actually act on, then anything else we found, and
+        // fall back to reading /Applications directly — this can be called before
+        // the app scan has finished, and an empty candidate list would report
+        // `.unknown` rather than the truth.
         let preferred = adoptionCandidates.map { URL(fileURLWithPath: $0.app.path) }
         let rest = installedApps.map { URL(fileURLWithPath: $0.path) }
-        appManagementStatus = await AppManagementPermission.probe(candidates: preferred + rest)
+        let candidates = preferred + rest
+        appManagementStatus = await AppManagementPermission.probe(
+            candidates: candidates.isEmpty ? AppManagementPermission.defaultCandidates() : candidates
+        )
     }
 
     func openAppManagementSettings() {
@@ -324,6 +339,11 @@ final class AppModel {
     var outdatedList: [OutdatedPackage] { outdated }
 
     var upgradableCount: Int { outdated.filter { !$0.pinned }.count }
+
+    /// Formulae live in the Cellar, so only outdated casks are affected by the
+    /// App Management permission. Used to decide whether warning about it is
+    /// relevant at all.
+    var hasOutdatedCasks: Bool { outdated.contains { $0.kind == .cask } }
 
     var counts: (formulae: Int, casks: Int, leaves: Int) {
         (installed.filter { $0.kind == .formula }.count,

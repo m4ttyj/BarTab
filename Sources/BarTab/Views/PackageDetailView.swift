@@ -25,6 +25,9 @@ struct PackageDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 actionBar
+                if ref.kind == .cask, installed != nil, model.appManagementStatus == .denied {
+                    AppManagementBanner()
+                }
                 deprecationBanner
                 detailsCard
                 if !dependencies.isEmpty { dependenciesCard }

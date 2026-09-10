@@ -65,6 +65,18 @@ enum AppManagementPermission {
         }.value
     }
 
+    /// App bundles in the places casks install to, found without needing the
+    /// app scan to have finished. Keeps the probe usable from any call site at
+    /// any point in startup.
+    static func defaultCandidates() -> [URL] {
+        let fm = FileManager.default
+        return AppScanner.searchPaths.flatMap { root -> [URL] in
+            guard let names = try? fm.contentsOfDirectory(atPath: root) else { return [] }
+            return names.filter { $0.hasSuffix(".app") }
+                .map { URL(fileURLWithPath: root).appendingPathComponent($0) }
+        }
+    }
+
     static func openSettings() {
         NSWorkspace.shared.open(settingsURL)
     }

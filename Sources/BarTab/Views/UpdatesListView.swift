@@ -11,6 +11,11 @@ struct UpdatesListView: View {
             header
             Divider()
 
+            if model.appManagementStatus == .denied, model.hasOutdatedCasks {
+                AppManagementNotice()
+                Divider()
+            }
+
             if items.isEmpty {
                 Placeholder(
                     title: model.isLoadingLocal ? "Checking…" : "Everything is up to date",
