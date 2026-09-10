@@ -5,6 +5,8 @@ browse the full catalogue of formulae and casks to install something new.
 
 <img src="Resources/icon-256.png" width="128" alt="BarTab icon">
 
+![BarTab's Installed view, with glib selected and its dependencies shown both ways](docs/screenshot.png)
+
 ## What it does
 
 **Installed** — every formula and cask on your Mac with its version, description
