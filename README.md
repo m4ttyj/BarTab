@@ -178,4 +178,10 @@ Resources/AppIcon.{svg,icns}
 scripts/build-app.sh
 ```
 
-Not affiliated with the Homebrew project.
+## Licence
+
+MIT — see [LICENSE](LICENSE).
+
+Not affiliated with the Homebrew project. "Homebrew" is a trademark of the
+Homebrew project; this app drives the `brew` command line tool and is not
+endorsed by or associated with it.
