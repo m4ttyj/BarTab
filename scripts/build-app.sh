@@ -38,8 +38,8 @@ cd "$ROOT"
 
 APP_NAME="BarTab"
 BUNDLE_ID="co.damtech.bartab"
-VERSION="1.0"
-BUILD_NUMBER="1"
+VERSION="1.1"
+BUILD_NUMBER="2"
 MIN_MACOS="14.0"
 
 CONFIG="release"
@@ -163,7 +163,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key>          <string>$MIN_MACOS</string>
     <key>LSApplicationCategoryType</key>       <string>public.app-category.developer-tools</string>
     <key>NSHighResolutionCapable</key>         <true/>
-    <key>NSHumanReadableCopyright</key>        <string>Not affiliated with the Homebrew project.</string>
+    <key>NSHumanReadableCopyright</key>        <string>© 2026 Matthew Jarrett. MIT licensed. Not affiliated with the Homebrew project.</string>
     <key>NSPrincipalClass</key>                <string>NSApplication</string>
     <key>NSSupportsAutomaticTermination</key>  <true/>
     <key>NSSupportsSuddenTermination</key>     <true/>
