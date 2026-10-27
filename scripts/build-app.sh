@@ -38,8 +38,8 @@ cd "$ROOT"
 
 APP_NAME="BarTab"
 BUNDLE_ID="co.damtech.bartab"
-VERSION="1.1"
-BUILD_NUMBER="2"
+VERSION="1.2"
+BUILD_NUMBER="3"
 MIN_MACOS="14.0"
 
 CONFIG="release"
