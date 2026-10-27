@@ -37,6 +37,10 @@ struct InstalledPackage: Identifiable, Sendable, Hashable {
     let kegOnly: Bool
     let outdated: Bool
     let appNames: [String]       // casks: bundled .app names
+    /// A cask Homebrew still has registered whose app is no longer on disk —
+    /// usually because it was dragged to the Bin by hand after installing.
+    /// Always false for formulae, which don't install into /Applications.
+    let isOrphaned: Bool
 
     var id: String { "\(kind.rawValue):\(token)" }
 

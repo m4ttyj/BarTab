@@ -58,6 +58,7 @@ struct Pill: View {
             Text(text)
         }
         .font(.caption2.weight(.medium))
+        .lineLimit(1)
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
         .background(tint.opacity(0.15), in: Capsule())

@@ -113,6 +113,14 @@ unzipping the release, and knowing before the tap catches up. The result is
 stored, so a launch inside the once-a-day window still knows an update is
 waiting, and is discarded once the running build catches up.
 
+**Orphaned casks** — a cask Homebrew still has registered whose app is no longer
+on disk, usually dragged to the Bin by hand. BarTab flags these in the Installed
+list and offers the two ways out: download the app again, or have Homebrew stop
+tracking it. The second needs `brew uninstall --cask --force`, because a plain
+uninstall refuses — it raises "It seems the App source … is not there" when the
+app it wants to delete has already gone. Only casks that actually declare an app
+artifact are checked, so pkg, binary and font casks aren't flagged forever.
+
 **Maintenance** — `brew doctor`, `brew cleanup` (with a dry run first, so you can
 see how much space you'd reclaim), `brew autoremove`, and `brew update`.
 

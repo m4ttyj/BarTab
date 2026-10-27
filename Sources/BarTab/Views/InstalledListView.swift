@@ -72,6 +72,10 @@ struct InstalledListView: View {
             Divider()
             HStack(spacing: 10) {
                 Text("\(counts.formulae) formulae · \(counts.casks) casks")
+                if !model.orphanedCasks.isEmpty {
+                    Text("· \(model.orphanedCasks.count) app\(model.orphanedCasks.count == 1 ? "" : "s") missing")
+                        .foregroundStyle(.red)
+                }
                 Spacer()
                 if model.totalInstalledSize > 0 {
                     Text(Format.bytes(model.totalInstalledSize))
@@ -103,6 +107,13 @@ struct InstalledRow: View {
                         .fontWeight(.medium)
                         .lineLimit(1)
                     if package.pinned { Image(systemName: "pin.fill").font(.caption2).foregroundStyle(.secondary) }
+                    // Icon only: a long package name leaves no room for a worded
+                    // pill in a narrow column, and this needs to stay legible.
+                    if package.isOrphaned {
+                        Image(systemName: "questionmark.app.dashed")
+                            .foregroundStyle(.red)
+                            .help("The app is missing — Homebrew still has this cask registered")
+                    }
                     if package.deprecated { Pill(text: "Deprecated", tint: .red) }
                     // Most formulae are dependencies, so flag the few you chose
                     // yourself rather than badging almost every row.

@@ -56,7 +56,8 @@ struct BrewService: Sendable {
                 deprecationReason: item["deprecation_reason"].nonEmptyString,
                 kegOnly: item["keg_only"].bool,
                 outdated: item["outdated"].bool,
-                appNames: []
+                appNames: [],
+                isOrphaned: false
             ))
         }
 
@@ -83,7 +84,8 @@ struct BrewService: Sendable {
                 deprecationReason: item["deprecation_reason"].nonEmptyString,
                 kegOnly: false,
                 outdated: item["outdated"].bool,
-                appNames: caskAppNames(item)
+                appNames: caskAppNames(item),
+                isOrphaned: isOrphanedCask(item)
             ))
         }
 
@@ -109,6 +111,46 @@ struct BrewService: Sendable {
             }
         }
         return Array(names)
+    }
+
+    /// True when a cask declares app artifacts but none of them are on disk.
+    ///
+    /// Only casks that actually install an app are considered: plenty install a
+    /// pkg, a binary or a font and would otherwise be flagged permanently.
+    static func isOrphanedCask(_ item: JSONValue) -> Bool {
+        let locations = caskAppLocations(item)
+        guard !locations.isEmpty else { return false }
+        return !locations.contains { FileManager.default.fileExists(atPath: $0) }
+    }
+
+    /// Absolute paths an installed cask's apps should occupy. An explicit
+    /// `target` wins; otherwise the app could be in either Applications folder.
+    static func caskAppLocations(_ item: JSONValue) -> [String] {
+        var paths: Set<String> = []
+        let userApps = NSHomeDirectory() + "/Applications"
+        for artifact in item["artifacts"].array {
+            var declared: [String] = []
+            var explicitTargets: [String] = []
+            for app in artifact["app"].array {
+                if let name = app.string { declared.append(name) }
+                if let target = app["target"].string { explicitTargets.append(target) }
+            }
+            if let target = artifact["target"].string, target.hasSuffix(".app") {
+                explicitTargets.append(target)
+            }
+            for target in explicitTargets where target.hasPrefix("/") {
+                paths.insert(target)
+            }
+            // Only fall back to the standard locations when nothing absolute was
+            // declared, so a cask that installs elsewhere isn't called orphaned.
+            if explicitTargets.filter({ $0.hasPrefix("/") }).isEmpty {
+                for name in declared.map({ ($0 as NSString).lastPathComponent }) {
+                    paths.insert("/Applications/" + name)
+                    paths.insert(userApps + "/" + name)
+                }
+            }
+        }
+        return Array(paths)
     }
 
     /// Bundle identifiers a cask names in its uninstall/zap stanzas. `quit` is the

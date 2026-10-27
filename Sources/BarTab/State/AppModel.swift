@@ -562,6 +562,22 @@ final class AppModel {
         section = .activity
     }
 
+    /// Deregisters a cask whose app has already been deleted. `brew uninstall`
+    /// raises "It seems the App source … is not there" without --force, so the
+    /// normal uninstall cannot clear one of these.
+    func forgetOrphanedCask(_ ref: PackageRef) {
+        guard ref.kind == .cask else { return }
+        operations.enqueue(
+            title: "Remove \(ref.token) from Homebrew",
+            arguments: ["uninstall", "--cask", "--force", ref.token]
+        )
+        section = .activity
+    }
+
+    var orphanedCasks: [InstalledPackage] {
+        installed.filter(\.isOrphaned)
+    }
+
     func reinstall(_ ref: PackageRef) {
         operations.enqueue(title: "Reinstall \(ref.token)", arguments: ["reinstall", ref.kind.brewFlag, ref.token])
         section = .activity

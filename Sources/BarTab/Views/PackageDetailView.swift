@@ -8,6 +8,7 @@ struct PackageDetailView: View {
     @State private var dependents: [String] = []
     @State private var loadedDependents = false
     @State private var showUninstallConfirm = false
+    @State private var showForgetConfirm = false
     @State private var showZapConfirm = false
 
     private var installed: InstalledPackage? { model.installedPackage(ref) }
@@ -25,6 +26,7 @@ struct PackageDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 header
                 actionBar
+                if installed?.isOrphaned == true { orphanBanner }
                 if ref.kind == .cask, installed != nil, model.appManagementStatus == .denied {
                     AppManagementBanner()
                 }
@@ -62,6 +64,16 @@ struct PackageDetailView: View {
             } else {
                 Text("\(dependents.count) installed package\(dependents.count == 1 ? "" : "s") depend on this: \(dependents.prefix(6).joined(separator: ", "))\(dependents.count > 6 ? "…" : ""). Removing it will likely break them.")
             }
+        }
+        .confirmationDialog(
+            "Remove \(ref.token) from Homebrew?",
+            isPresented: $showForgetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) { model.forgetOrphanedCask(ref) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Homebrew stops tracking \(ref.token). Nothing is deleted — the app is already gone. You can install it again at any time.")
         }
         .confirmationDialog(
             "Remove all data for \(ref.token)?",
@@ -207,6 +219,46 @@ struct PackageDetailView: View {
     }
 
     // MARK: - Cards
+
+    /// Shown when Homebrew has a cask registered whose app is no longer on disk.
+    private var orphanBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Image(systemName: "questionmark.app.dashed")
+                    .foregroundStyle(.red)
+                Text("The app is missing")
+                    .fontWeight(.semibold)
+            }
+
+            Text("Homebrew still has \(ref.token) registered, but \(installed?.appNames.first ?? "its app") isn't in your Applications folder — most likely deleted by hand rather than removed with brew.")
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text("Until that's settled Homebrew keeps reporting it as installed, and a plain `brew uninstall` refuses to remove it because the app it wants to delete isn't there.")
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 8) {
+                Button {
+                    model.reinstall(ref)
+                } label: {
+                    Label("Download It Again", systemImage: "arrow.down.circle")
+                }
+                .buttonStyle(.borderedProminent)
+                .help("Runs brew reinstall --cask \(ref.token), putting the app back")
+                .disabled(model.operations.isBusy)
+
+                Button("Remove from Homebrew…", role: .destructive) { showForgetConfirm = true }
+                    .help("Runs brew uninstall --cask --force \(ref.token), so Homebrew stops tracking an app you've already deleted")
+                    .disabled(model.operations.isBusy)
+            }
+            .padding(.top, 2)
+        }
+        .font(.callout)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(.red.opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
+    }
 
     private var detailsCard: some View {
         SectionCard(title: "Details", systemImage: "info.circle") {
