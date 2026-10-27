@@ -26,7 +26,7 @@ struct RootView: View {
         } content: {
             contentColumn
                 .id(model.section)
-                .navigationSplitViewColumnWidth(min: 260, ideal: 340, max: 520)
+                .navigationSplitViewColumnWidth(min: 260, ideal: 400, max: 520)
         } detail: {
             detailColumn
         }

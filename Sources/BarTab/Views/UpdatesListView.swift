@@ -43,37 +43,66 @@ struct UpdatesListView: View {
         }
     }
 
+    /// The content column can be dragged down to 260pt, where all three controls
+    /// on one line truncate the primary action to "Upgrad…". `ViewThatFits`
+    /// measures the roomy layout first and falls back to a stacked one, which
+    /// avoids guessing at a breakpoint or forcing sizes with `fixedSize`.
     private var header: some View {
-        @Bindable var model = model
-
-        return HStack(spacing: 8) {
-            Button {
-                model.upgradeAll()
-            } label: {
-                Label("Upgrade All", systemImage: "arrow.up.circle.fill")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                upgradeAllButton
+                Spacer(minLength: 0)
+                selfUpdatingToggle
+                checkForUpdatesButton
             }
-            .buttonStyle(.borderedProminent)
-            .help("Runs brew upgrade — updates every package listed here except pinned ones")
-            .disabled(model.upgradableCount == 0 || model.operations.isBusy)
 
-            Spacer()
-
-            Toggle("Self-updating apps", isOn: $model.includeSelfUpdatingCasks)
-                .toggleStyle(.checkbox)
-                .font(.caption)
-                .help("Also list casks like Chrome and Slack that update themselves")
-
-            Button {
-                model.updateHomebrew(showActivity: false)
-            } label: {
-                Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
-                    .labelStyle(.iconOnly)
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 8) {
+                    upgradeAllButton
+                    Spacer(minLength: 8)
+                    checkForUpdatesButton
+                }
+                selfUpdatingToggle
             }
-            .help("Fetch the newest package definitions and re-check — runs brew update, then brew outdated")
-            .disabled(model.operations.isBusy)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
+    }
+
+    private var upgradeAllButton: some View {
+        Button {
+            model.upgradeAll()
+        } label: {
+            Label("Upgrade All", systemImage: "arrow.up.circle.fill")
+                .lineLimit(1)
+        }
+        .buttonStyle(.borderedProminent)
+        .help("Runs brew upgrade — updates every package listed here except pinned ones")
+        .disabled(model.upgradableCount == 0 || model.operations.isBusy)
+    }
+
+    private var selfUpdatingToggle: some View {
+        @Bindable var model = model
+
+        // Kept short on purpose: this label's width is what decides whether the
+        // roomy single-row header still fits at the default column width.
+        return Toggle("Self-updating", isOn: $model.includeSelfUpdatingCasks)
+            .toggleStyle(.checkbox)
+            .controlSize(.small)
+            .font(.caption)
+            .lineLimit(1)
+            .help("Also list casks that update themselves, like Chrome and Slack. Homebrew hides these by default because upgrading them rarely does anything.")
+    }
+
+    private var checkForUpdatesButton: some View {
+        Button {
+            model.updateHomebrew(showActivity: false)
+        } label: {
+            Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
+                .labelStyle(.iconOnly)
+        }
+        .help("Fetch the newest package definitions and re-check — runs brew update, then brew outdated")
+        .disabled(model.operations.isBusy)
     }
 }
 
