@@ -142,7 +142,24 @@ final class AppModel {
     private enum Key {
         static let autoUpdateOnLaunch = "autoUpdateOnLaunch"
         static let lastHomebrewUpdate = "lastHomebrewUpdate"
+        static let showMenuBarIcon = "showMenuBarIcon"
+        static let lastAppUpdateCheck = "lastAppUpdateCheck"
+        static let knownAppUpdateVersion = "knownAppUpdateVersion"
+        static let knownAppUpdateURL = "knownAppUpdateURL"
     }
+
+    /// Show a mug in the menu bar with a count of pending updates.
+    var showMenuBarIcon: Bool {
+        didSet { UserDefaults.standard.set(showMenuBarIcon, forKey: Key.showMenuBarIcon) }
+    }
+
+    /// A newer BarTab on GitHub, if there is one.
+    private(set) var availableAppUpdate: AppRelease?
+    private(set) var isCheckingAppUpdate = false
+    private(set) var appUpdateCheckError: String?
+    private(set) var lastAppUpdateCheck: Date?
+
+    static let appUpdateCheckInterval: TimeInterval = 24 * 60 * 60
 
     /// Refresh Homebrew's package definitions shortly after launch, so the
     /// Updates list reflects reality without the user running two commands first.
@@ -165,9 +182,21 @@ final class AppModel {
 
     init() {
         let defaults = UserDefaults.standard
-        defaults.register(defaults: [Key.autoUpdateOnLaunch: true])
+        defaults.register(defaults: [Key.autoUpdateOnLaunch: true, Key.showMenuBarIcon: true])
         autoUpdateOnLaunch = defaults.bool(forKey: Key.autoUpdateOnLaunch)
+        showMenuBarIcon = defaults.bool(forKey: Key.showMenuBarIcon)
         lastHomebrewUpdate = defaults.object(forKey: Key.lastHomebrewUpdate) as? Date
+        lastAppUpdateCheck = defaults.object(forKey: Key.lastAppUpdateCheck) as? Date
+
+        // The check is throttled to once a day, so the *result* has to outlive the
+        // process — otherwise every launch inside that window forgets there's an
+        // update waiting. Discarded once the running build catches up.
+        if let version = defaults.string(forKey: Key.knownAppUpdateVersion),
+           let link = defaults.string(forKey: Key.knownAppUpdateURL),
+           let url = URL(string: link),
+           AppUpdateChecker.isVersion(version, newerThan: AppUpdateChecker.runningVersion) {
+            availableAppUpdate = AppRelease(version: version, tag: "v\(version)", url: url, publishedAt: nil)
+        }
     }
 
     // UI selection
@@ -245,6 +274,7 @@ final class AppModel {
         // Its completion triggers refreshLocal, which re-runs `brew outdated` —
         // so updating the definitions and re-checking is one step, not two.
         autoUpdateIfDue()
+        await checkForAppUpdate()
     }
 
     private func loadVersion() async {
@@ -555,6 +585,52 @@ final class AppModel {
     private func autoUpdateIfDue() {
         guard autoUpdateOnLaunch, definitionsAreStale, !operations.isBusy else { return }
         updateHomebrew(showActivity: false)
+    }
+
+    // MARK: - BarTab's own updates
+
+    /// True when this copy of BarTab came from Homebrew, which decides whether
+    /// `brew upgrade` is the right way to update it.
+    var isSelfManagedByHomebrew: Bool {
+        installed.contains { $0.kind == .cask && $0.token == "bartab" }
+    }
+
+    var runningAppVersion: String { AppUpdateChecker.runningVersion }
+
+    func checkForAppUpdate(force: Bool = false) async {
+        if !force, let lastAppUpdateCheck,
+           Date().timeIntervalSince(lastAppUpdateCheck) < Self.appUpdateCheckInterval {
+            return
+        }
+        isCheckingAppUpdate = true
+        appUpdateCheckError = nil
+        defer { isCheckingAppUpdate = false }
+
+        do {
+            let release = try await AppUpdateChecker.newerRelease()
+            availableAppUpdate = release
+            lastAppUpdateCheck = Date()
+            let defaults = UserDefaults.standard
+            defaults.set(lastAppUpdateCheck, forKey: Key.lastAppUpdateCheck)
+            defaults.set(release?.version, forKey: Key.knownAppUpdateVersion)
+            defaults.set(release?.url.absoluteString, forKey: Key.knownAppUpdateURL)
+        } catch {
+            // Not reaching GitHub is not worth shouting about; it's recorded for
+            // the Settings pane and retried on the next launch.
+            appUpdateCheckError = error.localizedDescription
+        }
+    }
+
+    func openAppReleasePage() {
+        guard let availableAppUpdate else { return }
+        NSWorkspace.shared.open(availableAppUpdate.url)
+    }
+
+    /// Hands the upgrade to Terminal rather than running it in-process. Homebrew
+    /// replaces /Applications/BarTab.app as part of this, so the command needs to
+    /// outlive the very app that started it.
+    func upgradeSelfInTerminal() {
+        openInTerminal(["upgrade", "--cask", "bartab"])
     }
 
     private func recordHomebrewUpdate() {

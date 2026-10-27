@@ -11,6 +11,11 @@ struct UpdatesListView: View {
             header
             Divider()
 
+            if let release = model.availableAppUpdate {
+                AppUpdateNotice(release: release)
+                Divider()
+            }
+
             if model.appManagementStatus == .denied, model.hasOutdatedCasks {
                 AppManagementNotice()
                 Divider()

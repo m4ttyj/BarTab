@@ -99,6 +99,20 @@ without the permission Homebrew may still succeed by deleting and reinstalling
 the app instead of taking over your copy, and the banner says so, since that
 trade-off is yours to make.
 
+**Menu bar** — a mug in the menu bar carrying a count of packages waiting to be
+upgraded, with a menu listing them, Upgrade All, and a re-check. Switch it off in
+Settings (⌘,). The count is composited into a template image rather than passed
+as a `Label` title, because SwiftUI renders a `MenuBarExtra` label icon-only and
+silently drops the text.
+
+**BarTab's own updates** — BarTab asks GitHub once a day whether a newer release
+has been published, and says so in the Updates list, the menu bar menu and
+Settings. A Homebrew-installed copy already learns this through `brew outdated`
+once the tap refreshes; this covers the cases that doesn't — a copy installed by
+unzipping the release, and knowing before the tap catches up. The result is
+stored, so a launch inside the once-a-day window still knows an update is
+waiting, and is discarded once the running build catches up.
+
 **Maintenance** — `brew doctor`, `brew cleanup` (with a dry run first, so you can
 see how much space you'd reclaim), `brew autoremove`, and `brew update`.
 

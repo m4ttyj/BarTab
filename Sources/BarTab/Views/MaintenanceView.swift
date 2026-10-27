@@ -228,9 +228,9 @@ struct MaintenanceDetailView: View {
             },
             content: {
                 VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Update definitions when BarTab opens", isOn: $model.autoUpdateOnLaunch)
-                        .help("Runs brew update in the background after launch, then re-checks for updates")
-                    Text("At most once an hour, and skipped if a command is already running. A refresh that fails is retried next time you open BarTab.")
+                    Text(model.autoUpdateOnLaunch
+                         ? "Running automatically after launch, at most once an hour. Change that in Settings (⌘,)."
+                         : "Automatic updating on launch is switched off in Settings (⌘,).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

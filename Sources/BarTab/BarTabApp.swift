@@ -34,5 +34,18 @@ struct BarTabApp: App {
                 Link("Homebrew Documentation", destination: URL(string: "https://docs.brew.sh")!)
             }
         }
+
+        MenuBarExtra(isInserted: $model.showMenuBarIcon) {
+            MenuBarMenu()
+                .environment(model)
+        } label: {
+            MenuBarLabel(pending: model.outdated.count)
+        }
+        .menuBarExtraStyle(.menu)
+
+        Settings {
+            BarTabSettings()
+                .environment(model)
+        }
     }
 }
