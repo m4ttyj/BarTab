@@ -78,8 +78,11 @@ final class OperationCenter {
     private(set) var current: BrewOperation?
     var selectedOperationID: BrewOperation.ID?
 
-    /// Called on the main actor after each operation that changed local state.
-    var onLocalStateChanged: (() async -> Void)?
+    /// Called on the main actor as each operation finishes, whatever its outcome.
+    /// The model decides what to do with it — reload state, stamp a timestamp.
+    /// Main-actor isolated: `BrewOperation` is an observable reference type that
+    /// never leaves this actor, and an unannotated closure would be `@concurrent`.
+    var onOperationFinished: (@MainActor (BrewOperation) async -> Void)?
 
     private var env: BrewEnvironment?
     private var pumping = false
@@ -151,9 +154,7 @@ final class OperationCenter {
 
             current = nil
 
-            if next.invalidatesLocalState {
-                await onLocalStateChanged?()
-            }
+            await onOperationFinished?(next)
         }
     }
 

@@ -138,6 +138,38 @@ final class AppModel {
     private(set) var cleanupPreview: CleanupPreview?
     private(set) var isCheckingCleanup = false
 
+    // Preferences
+    private enum Key {
+        static let autoUpdateOnLaunch = "autoUpdateOnLaunch"
+        static let lastHomebrewUpdate = "lastHomebrewUpdate"
+    }
+
+    /// Refresh Homebrew's package definitions shortly after launch, so the
+    /// Updates list reflects reality without the user running two commands first.
+    var autoUpdateOnLaunch: Bool {
+        didSet { UserDefaults.standard.set(autoUpdateOnLaunch, forKey: Key.autoUpdateOnLaunch) }
+    }
+
+    /// When `brew update` last succeeded, however it was triggered.
+    private(set) var lastHomebrewUpdate: Date?
+
+    /// Homebrew's own `HOMEBREW_AUTO_UPDATE_SECS` defaults to 24 hours, but this
+    /// app exists to show what needs updating, so it refreshes more eagerly —
+    /// while still not re-fetching on every single launch.
+    static let autoUpdateInterval: TimeInterval = 60 * 60
+
+    var definitionsAreStale: Bool {
+        guard let lastHomebrewUpdate else { return true }
+        return Date().timeIntervalSince(lastHomebrewUpdate) >= Self.autoUpdateInterval
+    }
+
+    init() {
+        let defaults = UserDefaults.standard
+        defaults.register(defaults: [Key.autoUpdateOnLaunch: true])
+        autoUpdateOnLaunch = defaults.bool(forKey: Key.autoUpdateOnLaunch)
+        lastHomebrewUpdate = defaults.object(forKey: Key.lastHomebrewUpdate) as? Date
+    }
+
     // UI selection
     var section: SidebarSection = .installed
     var installedFilter: InstalledFilter = .all
@@ -187,8 +219,16 @@ final class AppModel {
             self.env = env
             self.service = BrewService(env: env)
             operations.configure(env: env)
-            operations.onLocalStateChanged = { [weak self] in
-                await self?.refreshLocal()
+            operations.onOperationFinished = { [weak self] operation in
+                guard let self else { return }
+                // A successful definitions refresh resets the auto-update clock.
+                // A failed one deliberately doesn't, so the next launch retries.
+                if operation.status == .succeeded, operation.arguments.first == "update" {
+                    self.recordHomebrewUpdate()
+                }
+                if operation.invalidatesLocalState {
+                    await self.refreshLocal()
+                }
             }
         } catch {
             setupError = error.localizedDescription
@@ -199,6 +239,12 @@ final class AppModel {
         async let cat: Void = loadCatalog()
         async let apps: Void = scanApps()
         _ = await (version, local, cat, apps)
+
+        // Queued, not awaited: the window is already usable with the state we
+        // just read, and `brew update` can take a while on a slow connection.
+        // Its completion triggers refreshLocal, which re-runs `brew outdated` —
+        // so updating the definitions and re-checking is one step, not two.
+        autoUpdateIfDue()
     }
 
     private func loadVersion() async {
@@ -499,9 +545,21 @@ final class AppModel {
         )
     }
 
-    func updateHomebrew() {
+    func updateHomebrew(showActivity: Bool = true) {
         operations.enqueue(title: "Update Homebrew", arguments: ["update"])
-        section = .activity
+        if showActivity { section = .activity }
+    }
+
+    /// Refreshes definitions on launch when they're stale, without stealing the
+    /// window away to the Activity log — the toolbar spinner is enough signal.
+    private func autoUpdateIfDue() {
+        guard autoUpdateOnLaunch, definitionsAreStale, !operations.isBusy else { return }
+        updateHomebrew(showActivity: false)
+    }
+
+    private func recordHomebrewUpdate() {
+        lastHomebrewUpdate = Date()
+        UserDefaults.standard.set(lastHomebrewUpdate, forKey: Key.lastHomebrewUpdate)
     }
 
     func runCleanup() {

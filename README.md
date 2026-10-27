@@ -39,7 +39,11 @@ for, as opposed to the dependencies they dragged in). The footer totals your
 Homebrew disk usage.
 
 **Updates** — everything `brew outdated` reports, showing installed → available
-versions. Upgrade one package or all of them. Pinned formulae are marked and
+versions. BarTab refreshes Homebrew's package definitions for you shortly after
+launch and then re-checks, so the list is current without running `brew update`
+and `brew outdated` by hand. That happens at most once an hour, is skipped while
+another command is running, and is retried next launch if it fails; turn it off
+under Maintenance → Update Homebrew. Upgrade one package or all of them. Pinned formulae are marked and
 skipped. A checkbox adds casks that update themselves (Chrome, Slack…), which
 brew hides by default.
 

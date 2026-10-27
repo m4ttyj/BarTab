@@ -19,7 +19,7 @@ struct UpdatesListView: View {
             if items.isEmpty {
                 Placeholder(
                     title: model.isLoadingLocal ? "Checking…" : "Everything is up to date",
-                    message: model.isLoadingLocal ? nil : "Last checked \(Format.relative(model.lastLocalRefresh)). Run Update Homebrew from Maintenance to pull the latest package definitions first.",
+                    message: model.isLoadingLocal ? nil : "Checked \(Format.relative(model.lastLocalRefresh)), against definitions updated \(Format.relative(model.lastHomebrewUpdate)).",
                     systemImage: model.isLoadingLocal ? "hourglass" : "checkmark.circle"
                 )
             } else {
@@ -64,12 +64,12 @@ struct UpdatesListView: View {
                 .help("Also list casks like Chrome and Slack that update themselves")
 
             Button {
-                model.updateHomebrew()
+                model.updateHomebrew(showActivity: false)
             } label: {
                 Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
                     .labelStyle(.iconOnly)
             }
-            .help("Run brew update to refresh package definitions")
+            .help("Fetch the newest package definitions and re-check — runs brew update, then brew outdated")
             .disabled(model.operations.isBusy)
         }
         .padding(.horizontal, 10)

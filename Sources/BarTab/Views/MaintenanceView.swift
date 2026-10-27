@@ -211,9 +211,11 @@ struct MaintenanceDetailView: View {
     // MARK: Update
 
     private var updatePane: some View {
-        pane(
+        @Bindable var model = model
+
+        return pane(
             title: "Update Homebrew",
-            blurb: "Pulls the newest formula and cask definitions. Run this before checking for updates if the list looks stale.",
+            blurb: "Pulls the newest formula and cask definitions, then re-checks what's outdated. BarTab does this for you shortly after it opens, so you shouldn't normally need the button.",
             primary: {
                 Button {
                     model.updateHomebrew()
@@ -225,11 +227,21 @@ struct MaintenanceDetailView: View {
                 .disabled(model.operations.isBusy)
             },
             content: {
-                VStack(alignment: .leading, spacing: 6) {
-                    InfoRow("Homebrew version", model.brewVersion.isEmpty ? "—" : model.brewVersion)
-                    InfoRow("Prefix", model.env?.prefix.path ?? "—")
-                    InfoRow("Packages installed", "\(model.installed.count)")
-                    InfoRow("Disk used", Format.bytes(model.totalInstalledSize))
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Update definitions when BarTab opens", isOn: $model.autoUpdateOnLaunch)
+                        .help("Runs brew update in the background after launch, then re-checks for updates")
+                    Text("At most once an hour, and skipped if a command is already running. A refresh that fails is retried next time you open BarTab.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        InfoRow("Definitions updated", Format.relative(model.lastHomebrewUpdate))
+                        InfoRow("Homebrew version", model.brewVersion.isEmpty ? "—" : model.brewVersion)
+                        InfoRow("Prefix", model.env?.prefix.path ?? "—")
+                        InfoRow("Packages installed", "\(model.installed.count)")
+                        InfoRow("Disk used", Format.bytes(model.totalInstalledSize))
+                    }
                 }
             }
         )
